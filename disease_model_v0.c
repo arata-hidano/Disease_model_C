@@ -75,6 +75,7 @@ void visualize_animals() ;
 void move_animal_unit();
 void read_birth_data();
 void test_farms();
+int update_markov_date();
  
 /*   VARIABLES DECLARATION--------------------------------------------------------------------*/
 
@@ -87,7 +88,7 @@ int num_farm_var = 7 ; // 6 variables for each farm; farm_id, x, y, DCA, tb_stat
 char FarmDataFile[] = "/C_run/all_herds_details_export.csv";
 
 int column_prostatus = 7 ; // number of variable in the table of infection status
-// at this monemnt; N, sus, exposed, occult, detectable,if farm detected or not, infection pressure,
+// at this monemnt; N, sus, exposed, occult, detectable,infection pressure,if number of occult/detectable has changed
 
 /* Variables related to individual animal*/
 int num_animals = 3624420 ; // as of 2000 July 1st
@@ -120,12 +121,10 @@ int max_day_detect = 0.4*365; // max day to detect - 1 Conlan(2014) modified
 int max_day_occult = 11.1*365; // max day to occult - 1  Brooks-Pollock's parameter
 double Se_occult = 0.5;
 double Se_detect = 0.8;
+double beta_a = 0.007;//within-herd transmission parameter
+double beta_b = 0.001;//wildlife transmission parameter
+ //must be random draw from some distribution 0.003 - 0.036 Brooks-Pollock
 
-// int temp_id = 0 ; //temporary farm id
-// int transition_id = 0; // this is the row number for table that stores disease trnsition events
-
-// disease transition events include transition from exposed to Occut, and Occult to infectious
-// this table will be later used to add transition events to day_event pointer
 
 
 /* what's the problem about not tracing non-infected animals?
@@ -232,7 +231,8 @@ struct event_node *event_day[sim_days]; // a pointer to a struct
 
 /*===========================================================================================
 Itearation starts from here===========================================*/      	
-      srand((unsigned)time(NULL));	
+      
+	  srand((unsigned)time(NULL));	
       	
       	
       	
@@ -576,91 +576,100 @@ Checking each day if they have events and do these.
 If reaches to the end of the day, then proceed to the next day when events occur.
 Return the value for the date*/
 int today_date = 0;
-int next_nonMarkov_date,src_pro_id,des_pro_id,current_pro_id;
+int next_non_markov_date,day_to_markov,updated_date;
 long long move_akey, animal_akey;
-
+double sum_inf_pressure;
 struct event_node *current_event ;
+//current_event = new_event = (struct event_node*)malloc(sizeof( struct event_node ));
 struct animal_node *current_animal ;
 int temp_days = 31;
-int detected_farm_id ;
+int current_pro_id ;
 
-printf("Before 2055") ;
-visualize_animals(FarmProductionList,(2055*3+2)) ;
-printf("These are animals in 2056 before") ;
-visualize_animals(FarmProductionList,2056*3+2) ;
-system("pause");
+//printf("Before 2055") ;
+//visualize_animals(FarmProductionList,(2055*3+2)) ;
+//printf("These are animals in 2056 before") ;
+//visualize_animals(FarmProductionList,2056*3+2) ;
+//system("pause");
 
 
-while(today_date<2) 
-{// loop 1
-	current_event = event_day[today_date] ; //this gets the first event on the day
-if (current_event == NULL)
-{//loop2
-		today_date++; // go to the next day
-		printf("go to next day") ;
-}
-
-else
-{ //loop3
-		next_nonMarkov_date = today_date; // this date will be compared to Markov event date
-		//then here compare with Markov date and do Markov if Markov date < non-Markov
-		//then do events
-	if (current_event-> event_type <= 4 ) // if movement or new birth or cull death
-	{
-			/// here create move function
-	//printf("Event is %d",current_event-> event_type);		
-	move_animal_unit(FarmProductionList,FarmData,FarmProductionStatus,current_event,animal_node_pointer,Se_occult,Se_detect); // function to move animals
-	//printf("movement done");		
-	} // if movement done
-	else if (current_event-> event_type ==5 )//if this is testing
-	{
-	printf("testing");		
-	 // if movement done	
-	test_farms(FarmData,current_event,Se_occult,Se_detect) ; // get the testing schedule id
-		 // applies testing to all herds, for now only FarmProductionStatus[i[[5]>=1 farms
-		 // calculate the p of missing all infected animals
-		 // if false-positive, they test only reacter animals?
-		 //then no-FP + no-detection, no-FP+detection, FP+no-detection, FP+detection
-	printf("test done") ;	
-	} 
-		// if testing is happening, check all animals with test accuracy, then pick up test positive ones.
-		//Record information of positive animal (age, region of herd etc) and cull it.
-		//For positive herds, do follow up testing
-	else if (current_event-> event_type == 6||current_event-> event_type == 7)
-	{
-	printf("updating TB status") ;
-	animal_akey = current_event-> akey ;
-	current_pro_id =  current_event-> src_pro_id;//// ;--needs age type
-	current_animal = animal_node_pointer[animal_akey] ;
-	int current_farm = (int)(floor(((double)current_pro_id)/3)) ;
-		if (current_event-> event_type ==6 ) //exposed to occult
-		{
-		current_animal-> tb_status = 2 ;
-		FarmProductionStatus[current_pro_id][2]--;
-		FarmProductionStatus[current_pro_id][3]++;
-		FarmData[current_farm][6]++;	
-		}
-		if (current_event-> event_type ==7) // occult to detectable
-		{
-		current_animal-> tb_status = 3 ;
-		FarmProductionStatus[current_pro_id][3] = FarmProductionStatus[current_pro_id][3] - 1;
-		FarmProductionStatus[current_pro_id][4]++;
-		FarmData[current_farm][7]++ ;//increase detectable
-		FarmData[current_farm][6]-- ;//decrease occult
-		}
-	printf("Updating TB status done") ;	
-	}
-		
-	event_day[today_date] = current_event-> next_node ; //rewire to the next event
-//	free(current_event) ; // free memory
-			
-                
-			
-		
-}//loop3 ends
+while(today_date<sim_days)
+{
+  next_non_markov_date = today_date;
+  while (event_day[next_non_markov_date] == NULL)
+            {//loop2
+		    next_non_markov_date++; // go to the next day
+		    printf("go to next day") ;
+            } // now get next non-markov date
+  updated_date=update_markov_date(today_date,FarmData,FarmProductionStatus,FarmProductionList,num_farm_production,beta_a,beta_b,next_non_markov_date);
+  
+  if (updated_date==next_non_markov_date) // this means markov event did not happen
+     
+	 {// loop 1
+	  //this gets the first event on the day
+     current_event = event_day[next_non_markov_date];
+     while(current_event!=NULL)
+     {
+	 
+	   if (current_event-> event_type <= 4 ) // if movement or new birth or cull death
+	      {
+			move_animal_unit(FarmProductionList,FarmData,FarmProductionStatus,current_event,animal_node_pointer,Se_occult,Se_detect); // function to move animals
+	        //printf("movement done");		
+	      } // if movement done
+	   else if (current_event-> event_type ==5 )//if this is testing
+	      {
+	       //printf("testing");		
+	 	   test_farms(FarmData,current_event,Se_occult,Se_detect) ; // get the testing schedule id
+		 	 // if false-positive, they test only reacter animals?
+		    //then no-FP + no-detection, no-FP+detection, FP+no-detection, FP+detection
+	        //printf("test done") ;	
+	      } 
+		    // if testing is happening, check all animals with test accuracy, then pick up test positive ones.
+		    //Record information of positive animal (age, region of herd etc) and cull it.
+		    //For positive herds, do follow up testing
+	   else if (current_event-> event_type == 6||current_event-> event_type == 7)
+	      {
+	      printf("updating TB status") ;
+	      animal_akey = current_event-> akey ;
+	       current_pro_id =  current_event-> src_pro_id;//// ;--needs age type
+	        current_animal = animal_node_pointer[animal_akey] ;
+	        int current_farm = (int)(floor(((double)current_pro_id)/3)) ;
+		    if (current_event-> event_type ==6 ) //exposed to occult
+		      {
+		      current_animal-> tb_status = 2 ;
+		      FarmProductionStatus[current_pro_id][2]--;
+		      FarmProductionStatus[current_pro_id][3]++;
+		      FarmData[current_farm][6]++;	
+		      }
+		    if (current_event-> event_type ==7) // occult to detectable
+		      {
+		      current_animal-> tb_status = 3 ;
+		      FarmProductionStatus[current_pro_id][3] = FarmProductionStatus[current_pro_id][3] - 1;
+		      FarmProductionStatus[current_pro_id][4]++;
+		      FarmData[current_farm][7]++ ;//increase detectable
+		      FarmData[current_farm][6]-- ;//decrease occult
+		      }
+	        printf("Updating TB status done") ;	
+	      }//exposed->occult ot occult->detectable DONE
+		struct event_node *next_event;
+		next_event =  (struct event_node*)malloc(sizeof( struct event_node ));
+	   next_event = current_event-> next_node ; //rewire to the next event
+	   event_day[next_non_markov_date] = next_event;
+	   //free(current_event) ;
+	   
+     }//while loop for going to next events ends
 	
 	
-} // this is the end of loop 1 
+     } // this is the end of loop 1    
+     today_date = updated_date;
+  }	
+	
+	
+	
+
+
+
+ 
+
 
 //printf("These are animals in 2055") ;
 //visualize_animals(FarmProductionList,2055*3+2) ;
@@ -675,68 +684,7 @@ else
 
 
 
-/*==============================--SIMULATION DONE===========================*/
-
-/*3.1 Markov events*/
-/*========== WORKING
-
-
-
-// Markov events include following events.
-// (1) Within-herd transmission
-int sus; // number of susceptible on a given farm
-int infectious; // number of infected on a given farm
-int exposed; // number of exposed on a given farm
-int occult; // number of occult on a given farm
-int N; // number of total animals in the management group
-double beta_a; // within-herd transmission rate
-double farm_inf_rate_total; // TOTAL Within-herd transmission rate
-double wild_inf_rate_total; // TOTAL wildlife-transmission rate
-double gamma; // transition rate from latent to occult 
-double theta; // transition rate from occult to infectious
-
-// (2) Change from latent to infectious 
-// (3) Change from occult to detectable if needed
-// (4) Transmission from wildlife
-
-// Update TOTAL EVENT RATE
-
-	for(i = 0; i < total_farm_production; i++)
-	{
-	// UPDATE EVENT RATE ON A GIVEN FARM-MANAGEMENT UNIT
-	FarmManagement[i][5] = beta_a*FarmProductionStatus[1]*(FarmProductionStatus[3]+FarmProductionStatus[4])/FarmProductionStatus[0] ; // infection rate on a given farm
-		
-		// if wildlife infection is possible, activate the following
-		// FarmManagement[i][6] = beta_b*sus ; // rate of wildlife transmission
-		// UPDATE CUMULATIVE EVENT RATE ON THIS FARM
-		FarmManagement[i][7] = current_total + FarmManagement[i][5]//+FarmManagement[i][8];
-		// UPDATE CURRENT TOTAL EVENT RATE
-		current_total = FarmManagement[i][7];
-	}
 	
-	// NOW TOTAL EVENT RATE IS OBTAINED SO CALCULATE THE WAITING TIME
-	// Generate a random value between 0 and 1
-	double random_value = ((double)rand()/(double)RAND_MAX) ;
-	delta_t = -log(random_value)/current_total ; // Waiting time
-	
-	// WAITING TIME < TIME TO NEXT NON-MARKOV EVENT
-	if(delta_t < time_to_nonM) // if waiting time is shorter than time to the next non-Markov event
-	{
-		t = t + delta_t; // UPDATE TIME
-		random_number = // SELECT RANDOM NUMBER
-		markov_event_farm = // SELECT FARM IN WHICH EVENT OCCURS BASED ON CUMULATIVE VALUE
-		markov_event = // SELECT EVENT TO OCCUR BASED ON EACH RATE ON THIS FARM
-	}
-	// WAITINg TIME > TIME TO NEXT NON-MARKOV EVENT
-	else
-	{
-		t = t + time_to_nonM ; // UPDATE TIME TO NON-MARKOV EVENT DATE
-		// THEN DO MARKOV EVENT
-		nonmarkov_event_farm = event_table[][] // GET ALL btb INFECTED FARM THAT HAVE EVENTS
-		nonmarkov_event =  // GET ALL EVENTS ON btb INFECTED FARM
-		// UPDATE EACH FARM STATUS
-	}
-	=======================WORKING*/
 	
 	// NOW UPDATE THE EVENT TABLE SO THAT EVENTS THAT INVOLVE INFECTED FARMS ARE ONLY LISTED
 	
@@ -799,16 +747,6 @@ double theta; // transition rate from occult to infectious
 	
 
 
-/*(2) DO THE JOB.
-Until finding null, do the events.
-What to do for each event.
-Movement: Find the production unit and animal, detach from the linked list, add to the destination.
-Status update: Find the animals and change the status. Record it. If exposed to occult/occult to infectious, create events.
-Cull/Death: if TB related reason, keep the record. Maybe to farm linked list? Free memory of struct.
-Birth: Increase the nth brith, then create new movement events to eter the production unit.*/
-
-	
-	
 	
                 
                 
@@ -1334,7 +1272,6 @@ int des_pro_id = current_event->des_pro_id;
     
     
 /* -------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------- */
 /* TESTING HERDS */
 /* -------------------------------------------------------------------------- */
 void test_farms(double **FarmData,struct event_node *current_event,double Se_occult, double Se_detect)
@@ -1361,4 +1298,136 @@ void test_farms(double **FarmData,struct event_node *current_event,double Se_occ
 		}
 	}
 }
+
+/*----------------------------------------------------------------------------------*/
+/* CALCULATE NEXT MARKOV EVENT DATE*/
+/*----------------------------------------------------------------------------------*/
+int update_markov_date(int today_date, double **FarmData, double **FarmProductionStatus,struct animal_node *FarmProductionList[],int num_farm_production,double beta_a,double beta_b, int next_non_markov_date)
+{
+
+double inf_pressure, inf_pressure_wild,sum_inf_pressure,cumu_pressure;
+sum_inf_pressure = 0;
+double day_to_markov;
+int farm_id ;
+
+ for(i=0; i<num_farm_production; i++)
+	{//for loop A
 	
+	farm_id = (int)floor(i/3) ;
+	if (FarmData[farm_id][3]==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0)
+	{
+	    if(FarmData[farm_id][3]==0) //if it is in MCA
+	    {
+	    inf_pressure_wild = beta_b*FarmProductionStatus[i][1] ;
+		}
+		else
+		{
+		inf_pressure_wild = 0;	
+		}
+		inf_pressure = beta_a*FarmProductionStatus[i][1]*(FarmProductionStatus[i][3]+FarmProductionStatus[i][4])/FarmProductionStatus[i][0] + inf_pressure_wild ; // bSI/N + wildlife
+		FarmProductionStatus[i][5] = inf_pressure;
+		cumu_pressure = cumu_pressure + inf_pressure; // calculate the cumulative pressure
+		FarmProductionStatus[i][6] = cumu_pressure;
+		sum_inf_pressure = sum_inf_pressure + inf_pressure;	
+	}
+	
+	}//END OF for loop A	
+	 double random_value = ((double)rand()/(double)RAND_MAX) ;
+     day_to_markov =-log(random_value)/sum_inf_pressure ; // Waiting time
+//ASSESS IF NEXT MARKOV TIME IS BEFORE NEXT NON MARKOV TIME     
+	if (next_non_markov_date>day_to_markov+today_date)
+	{ // if markov comes first, choose infection events
+	   today_date = ceil(day_to_markov+today_date) ;
+	   double random_value = (double)rand()/(double)(RAND_MAX)*sum_inf_pressure;
+	   //randon value between 0 and sum_inf_pressure
+	   double current_value = 0;
+	   int pro_id = 0;
+	   
+	   while(random_value>current_value)
+	   {
+	   	farm_id = (int)floor(pro_id/3) ;
+	   	if (FarmData[farm_id][3]==0||FarmProductionStatus[pro_id][3]>0||FarmProductionStatus[pro_id][4]>0)
+	       {
+	       	current_value = FarmProductionStatus[pro_id][6] ;
+		   }
+		else
+		   {
+		   	pro_id++;
+		   }
+	   
+	   }//pro_id is the farm to choose for the event
+	   //now get the first animal in the production unit
+	   struct animal_node *current_animal;
+	   //current_animal = (struct animal_node*)malloc(sizeof( struct animal_node ));
+	   current_animal = FarmProductionList[pro_id];
+	   int total_s = FarmProductionStatus[pro_id][1];
+	   while(current_animal!=NULL)
+	    {//choosing which animal to infect begins
+	   	double random_value = ((double)rand()/(double)RAND_MAX); //choose value between 0 and 1
+	   	if (random_value <= 1/total_s)
+	   	 {
+	   	 	current_animal->tb_status = 1;
+	   	 	FarmProductionStatus[pro_id][1]--;
+	   	 	FarmProductionStatus[pro_id][2]++;
+	   	 	break ;
+		 }
+		else
+		 {
+		    current_animal = current_animal->next_node;	
+		 }
+	    } //choosing which animal to infect done  
+	}
+	else
+	{
+		today_date = next_non_markov_date;
+	}
+//ASSESSING MARKOV OR NOT DONE	
+return(today_date) ;
+    
+    
+}//END OF FUNCTION
+/*------------------------------------------------------------------------------------------------*/
+/*COUNT NUMBER OF INFECTED AND DETECTED FARMS*/
+/*--------------------------------------------------------------*/
+void count_infected_detected()
+{
+int i;
+for (i=0;i<num_total_farms;i++)
+{
+	if(FarmData[i][7]>0||FarmData[i][8]>0)
+	{
+	 OutPut[sim][0]++; //infected	
+	}
+	if(FarmData[i][6]==1)
+	{
+	 OutPut[sim][1]++;//detected
+	}
+}
+ 	
+	
+	
+}
+
+
+/*-----------------------------------------------------------------------------*/
+/*Export CSV file of the number of bTB detected\infected data*/
+/*------------------------------------------------------------------------------*/
+int write_output(char OutDataFile[],int **FreqTestArea, int num_simu, int dca_combination)
+{
+
+	FILE *DCAfreq = fopen(OutDataFile,"w");
+	int line_num, col_num;
+	
+	for (line_num = 0 ; line_num < num_simu+1; line_num ++)
+	{
+		for (col_num = 0;col_num <dca_combination ; col_num++ )
+		
+		{
+		
+	 fprintf(DCAfreq,"%d,",FreqTestArea[line_num][col_num]);
+  }
+  fprintf(DCAfreq,"\n");
+}
+	fclose(DCAfreq);
+	return 0;
+}
