@@ -129,8 +129,8 @@ int max_day_detect = 0.4*365; // max day to detect - 1 Conlan(2014) modified
 int max_day_occult = 11.1*365; // max day to occult - 1  Brooks-Pollock's parameter
 double Se_occult = 0.5;
 double Se_detect = 0.8;
-double beta_a = 0.007;//within-herd transmission parameter
-double beta_b = 0.001;//wildlife transmission parameter
+double beta_a = 0.0003;//within-herd transmission parameter
+double beta_b = 0.00000006;//wildlife transmission parameter
  //must be random draw from some distribution 0.003 - 0.036 Brooks-Pollock
 
 
@@ -209,8 +209,8 @@ int main(void){
    	    	 MoveData[i] = (long long*)malloc( sizeof(long long) * num_moves_vars);  
    		     	}
    	    	read_movement_data(MoveDataFile, MoveData, num_moves);
-   	    	printf("move data read");
-   	    	printf("MoveData akey is %lld, %lld, %lld, %lld", (long long)MoveData[0][0],(long long)MoveData[1][0],(long long)MoveData[2][0],(long long)MoveData[3][0]);
+   	    //	printf("move data read");
+   	    //	printf("MoveData akey is %lld, %lld, %lld, %lld", (long long)MoveData[0][0],(long long)MoveData[1][0],(long long)MoveData[2][0],(long long)MoveData[3][0]);
    	/* 2.5 Read test data*/
    	double **TestData = (double**)malloc( sizeof(double *) * num_tests);
    	    	for(i = 0; i < num_tests; i++)
@@ -235,11 +235,7 @@ int main(void){
    	    	for(i = 0; i < tot_iterations; i++)
    	    	 {
    	    	 OutPut[i] = (double*)malloc( sizeof(double) *num_OutPut); 
-				for (j=0; j < num_OutPut; j++)
-			        {
-			  	    OutPut[i][j] = 0 ; 
-				    } 
-   		     }
+				   		     }
       	/*============================================================================================*/
  
 /* Set memory for linked lists*/      
@@ -257,7 +253,13 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 	  srand((unsigned)time(NULL));	
       	
       	
-      	
+  for(i=0;i<tot_iterations;i++)
+  {
+  for (j=0; j < num_OutPut; j++)
+	{
+	OutPut[i][j] = 0 ; 
+	}
+  }
       	// INITIALISE THE FARM TB DETECTED STATUS, SUM OF OCCULT, SUM OF DETECTABLE
       	for(i=0; i< num_total_farms; i++)
       	{
@@ -291,7 +293,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
                 {
                 event_day[i] = NULL;
                 }
-      	printf("event is fine");
+      //	printf("event is fine");
       	/* Create a vector of size of number of animals that store a pointer to animal_node*/
       	
       	
@@ -299,7 +301,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
       	{
       		animal_node_pointer[i] = NULL;
 		  }
-        printf("animal_node_pointer is fine"); 
+      //  printf("animal_node_pointer is fine"); 
         /*===Populate animal arrays and fill the FarmProductionStatus as well=========================*/ 
           // Also here we can choose which animal is infected
           // Also we can count number of animas in each status if necessary to pass them to FarmProductionStatus
@@ -376,7 +378,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
             	new_event -> next_node = NULL;
             	new_event -> src_testarea = -100 ;
             	add_event_node(event_day,day_to_occult, new_event) ;
-            	printf("add occult");
+            //	printf("add occult");
                 }
 				/* Following was to check the bug in adding new event, which occurred because
             	I forgot to specify the size of new_event and then old memory was used
@@ -410,7 +412,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 				new_event -> event_type = 7; // 4 is occult to detectable
             	new_event -> next_node = NULL;
             	new_event -> src_testarea = -100 ;
-            	printf("add detect");
+            //	printf("add detect");
             	add_event_node(event_day,day_to_detect, new_event) ;
 			    }
 			}
@@ -421,6 +423,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 				
 				FarmProductionStatus[current_pro_id][4]++; // increment by 1
 				FarmData[current_farm][8]++;
+				printf("this farm has detectable");
 				} 
 			// if animal is susceptible
 			else if ((int)AnimalData[i][7]==0)
@@ -442,8 +445,8 @@ for(iteration=0; iteration<tot_iterations; iteration++)
             /* ADD address of this animal to the pointer list*/
             animal_node_pointer[current_akey] = new_node ;
            } 
-           printf("adding animal done");
-           system("pause");
+          // printf("adding animal done");
+           //system("pause");
            
            /* Check if animals were added properly
            for (i=0; i < 2; i++)
@@ -501,8 +504,8 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 int current_event_type ;
 	/* Add movements to event array*/
 	 // each farm struct is also a pointer to a struct   
-          printf("MoveData akey is %lld, %lld, %lld, %lld", (long long)MoveData[0][0],(long long)MoveData[1][0],(long long)MoveData[2][0],(long long)MoveData[3][0]);
-		  system("pause");
+          //printf("MoveData akey is %lld, %lld, %lld, %lld", (long long)MoveData[0][0],(long long)MoveData[1][0],(long long)MoveData[2][0],(long long)MoveData[3][0]);
+		  //system("pause");
 		  for (i=0; i < num_moves; i++)
           { 
                 int current_day = (int)MoveData[i][1] ;
@@ -554,8 +557,8 @@ int current_event_type ;
 				 }
                }
            }
-           printf("adding movement done");
-           system("pause");
+           //printf("adding movement done");
+           //system("pause");
            
            
     /* ADD BIRTH EVENT AND ADD BIRTH ANIMALS To THE ANIMAL POINTER*/
@@ -614,7 +617,7 @@ int current_event_type ;
 				struct event_node *new_event;
                 new_event = (struct event_node*)malloc(sizeof( struct event_node )); 
                 
-                new_event -> event_type = -100;
+                new_event -> event_type = 5;
                 new_event -> src_pro_id = (long long)TestData[i][1] ; //this is testing schedule
 				new_event -> des_pro_id = -100; // destination farm
                 new_event -> src_testarea = -100 ;
@@ -630,15 +633,15 @@ int current_event_type ;
 /*=========================DATA PREPARATION ENDS=============================================*/ 
 //check if events were added properly
 /* Following was used to check if events were properly added*/
-	printf("adding events done");
-	system("pause");	  
+	//printf("adding events done");
+	//system("pause");	  
 	  
  //for (i = 0 ; i < 12; i++)
    //   {
-          visualize_list(event_day, 0);
+      //    visualize_list(event_day, 0);
      //     }
-          printf("Before this you should have seen event lists!!");
-system("pause")	;	 
+        //  printf("Before this you should have seen event lists!!");
+//system("pause")	;	 
 //  */
 
 
@@ -681,25 +684,30 @@ while(today_date<sim_days)
 		    next_non_markov_date++; // go to the next day
 		    printf("go to next day") ;
             } // now get next non-markov date
+  if(next_non_markov_date>=sim_days)
+  {
+  	break;
+  }
   updated_date=update_markov_date(today_date,FarmData,FarmProductionStatus,FarmProductionList,num_farm_production,beta_a,beta_b,next_non_markov_date);
-  printf("day is updated") ;
-  system("pause");
+  printf("day is updated %d",updated_date) ;
+ // system("pause");
   if (updated_date==next_non_markov_date) // this means markov event did not happen
      {
 	 printf("yes updated date is next non markov date");
-     system("pause");
+     //system("pause");
 	 // loop 1
 	  //this gets the first event on the day
      current_event = event_day[next_non_markov_date];
-     printf("current event is %d",current_event->event_type);
-     system("pause");
+     printf("current_event is %d",current_event->event_type);
+     //printf("current event is %d",current_event->event_type);
+     //system("pause");
      while(current_event!=NULL)
      {
 	 
 	   if (current_event-> event_type <= 4 ) // if movement or new birth or cull death
 	      {
 			move_animal_unit(FarmProductionList,FarmData,FarmProductionStatus,current_event,animal_node_pointer,Se_occult,Se_detect); // function to move animals
-	        printf("movement done akey is %lld",current_event->akey);
+	    //    printf("movement done akey is %lld",current_event->akey);
 				
 	      } // if movement done
 	   else if (current_event-> event_type ==5 )//if this is testing
@@ -724,13 +732,14 @@ while(today_date<sim_days)
 		      {
 		      day_to_detect = rand()%max_day_detect+1;
 		      int day_to_add = day_to_detect + next_non_markov_date;
-			  if(day_to_add<sim_days)
-			  {
+			  
 				  	
 		      current_animal-> tb_status = 2 ;
 		      FarmProductionStatus[current_pro_id][2]--;
 		      FarmProductionStatus[current_pro_id][3]++;
-		      FarmData[current_farm][6]++;
+		      FarmData[current_farm][7]++;
+		      if(day_to_add<sim_days)
+			  {
 		      adding_new_event = new_event = (struct event_node*)malloc(sizeof( struct event_node ));
 		      adding_new_event->akey=animal_akey;
 		      adding_new_event->src_pro_id = -100; 
@@ -747,8 +756,8 @@ while(today_date<sim_days)
 		      current_animal-> tb_status = 3 ;
 		      FarmProductionStatus[current_pro_id][3]--;
 		      FarmProductionStatus[current_pro_id][4]++;
-		      FarmData[current_farm][7]++ ;//increase detectable
-		      FarmData[current_farm][6]-- ;//decrease occult
+		      FarmData[current_farm][8]++ ;//increase detectable
+		      FarmData[current_farm][7]-- ;//decrease occult
 		      }
 	        printf("Updating TB status done") ;	
 	      }//exposed->occult ot occult->detectable DONE
@@ -759,12 +768,12 @@ while(today_date<sim_days)
 	   if (current_event!=NULL)
 	   {
 	   free(previous_event);
-	   printf("next event is %d, %lld", current_event->event_type, current_event->akey);
+	   //printf("next event is %d, %lld", current_event->event_type, current_event->akey);
        }
 	   event_day[next_non_markov_date] = current_event;
 	   //printf("event day is pointing %lld",event_day[next_non_markov_date]->akey);
 	   j++;
-	   printf("this is %d th event",j);
+	   //printf("this is %d th event",j);
 	  // system("pause");
      }//while loop for going to next events ends
 	
@@ -784,7 +793,12 @@ while(today_date<sim_days)
 //printf("These are animals in 2055") ;
 //visualize_animals(FarmProductionList,2055*3+2) ;
 //printf("These are animals in 2056") ;
-//visualize_animals(FarmProductionList,2056*3+2) ;	   
+//visualize_animals(FarmProductionList,2056*3+2) ;	 
+for (i=0;i<num_total_farms;i++)
+{
+	if(FarmData[i][8]>0)
+	printf("this has detectable");
+  }  
 	   
 	   
 count_farms_infected_detected(FarmData,OutPut,num_total_farms,iteration);
@@ -1427,18 +1441,28 @@ int update_markov_date(int today_date, long long **FarmData, double **FarmProduc
 
 double inf_pressure, inf_pressure_wild,sum_inf_pressure,cumu_pressure;
 sum_inf_pressure = 0;
+cumu_pressure = 0;
 double day_to_markov;
 int farm_id ;
+int k = 0;
 
  for(i=0; i<num_farm_production; i++)
 	{//for loop A
 	
 	farm_id = (int)floor(i/3) ;
-	if (FarmData[farm_id][3]==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0)
+	if ((FarmData[farm_id][3]==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0)&&FarmProductionStatus[i][1]>0)
 	{
+		//if(FarmProductionStatus[i][0]<0)
+		//{
+		//	printf("N is <0 something wrong!");
+		//}
+		//printf("yes this farm is %d",i);
 	    if(FarmData[farm_id][3]==0) //if it is in MCA
 	    {
-	    inf_pressure_wild = beta_b*FarmProductionStatus[i][1] ;
+	    	
+	      inf_pressure_wild = beta_b*FarmProductionStatus[i][1] ;
+	    //  printf("inf pressure wild is %f",inf_pressure_wild);
+	      
 		}
 		else
 		{
@@ -1449,18 +1473,25 @@ int farm_id ;
 		cumu_pressure = cumu_pressure + inf_pressure; // calculate the cumulative pressure
 		FarmProductionStatus[i][6] = cumu_pressure;
 		sum_inf_pressure = sum_inf_pressure + inf_pressure;	
+		//printf("inf pressure is %f",sum_inf_pressure);
 	}
 	
 	}//END OF for loop A	
-	printf("inf pressure is %f",sum_inf_pressure);
+	//printf("inf pressure is %f",sum_inf_pressure);
 	 double random_value = ((double)rand()/(double)RAND_MAX) ;
-     day_to_markov =-log(random_value)/sum_inf_pressure ; // Waiting time
-     printf("day_to_markov is %f",day_to_markov);
+	 //printf("random value is %f",random_value);
+     day_to_markov =(-log(random_value))/sum_inf_pressure ; // Waiting time
+     //printf("day_to_markov is %f",day_to_markov);
 //ASSESS IF NEXT MARKOV TIME IS BEFORE NEXT NON MARKOV TIME     
 	if (next_non_markov_date>day_to_markov+today_date)
 	{ // if markov comes first, choose infection events
+	   k++;
+	   printf("This is %d th markov",k);
 	   today_date = ceil(day_to_markov+today_date) ;
+	   //printf("ceil days is %d",today_date);
+	   //system("pause");
 	   double random_value = (double)rand()/(double)(RAND_MAX)*sum_inf_pressure;
+	   //printf("random_value is %f",random_value);
 	   //randon value between 0 and sum_inf_pressure
 	   double current_value = 0;
 	   int pro_id = 0;
@@ -1468,16 +1499,17 @@ int farm_id ;
 	   while(random_value>current_value)
 	   {
 	   	farm_id = (int)floor(pro_id/3) ;
-	   	if (FarmData[farm_id][3]==0||FarmProductionStatus[pro_id][3]>0||FarmProductionStatus[pro_id][4]>0)
+	   	if ((FarmData[farm_id][3]==0||FarmProductionStatus[pro_id][3]>0||FarmProductionStatus[pro_id][4]>0)&&FarmProductionStatus[pro_id][0])
 	       {
 	       	current_value = FarmProductionStatus[pro_id][6] ;
-	       	printf("current_value is %f",current_value);
-	       	printf("random value is %f",random_value);
+	     //  	printf("current_value is %f",current_value);
+	      // 	printf("random value is %f",random_value);
+	       	pro_id++;
 		   }
 		else
 		   {
 		   	pro_id++;
-		   	printf("next pro id");
+		   //	printf("next pro id");
 		   }
 	   
 	   }//pro_id is the farm to choose for the event
@@ -1491,8 +1523,8 @@ int farm_id ;
 	   	double random_value = ((double)rand()/(double)RAND_MAX); //choose value between 0 and 1
 	   	if (random_value <= 1/total_s)
 	   	 {
-	   	 	printf("random value is %f",random_value);
-	   	 	printf("target value is %f",1/total_s);
+	   	 //	printf("random value is %f",random_value);
+	   	 //	printf("target value is %f",1/total_s);
 	   	 	current_animal->tb_status = 1;
 	   	 	FarmProductionStatus[pro_id][1]--;
 	   	 	FarmProductionStatus[pro_id][2]++;
@@ -1501,7 +1533,7 @@ int farm_id ;
 		else
 		 {
 		    current_animal = current_animal->next_node;	
-		    printf("next animal");
+		  //  printf("next animal");
 		 }
 	    } //choosing which animal to infect done  
 	}
@@ -1517,14 +1549,15 @@ return(today_date) ;
 /*------------------------------------------------------------------------------------------------*/
 /*COUNT NUMBER OF INFECTED AND DETECTED FARMS*/
 /*--------------------------------------------------------------*/
-void count_farms_infected_detected(double **FarmData, double **OutPut, int num_total_farms, int sim)
+void count_farms_infected_detected(double **FarmData, double **OutPut, long num_total_farms, int sim)
 {
-int i;
+long i;
 for (i=0;i<num_total_farms;i++)
 {
 	if(FarmData[i][7]>0||FarmData[i][8]>0)
 	{
 	 OutPut[sim][0]++; //infected	
+	 printf("one more infected");
 	}
 	if(FarmData[i][6]==1)
 	{
@@ -1540,7 +1573,7 @@ for (i=0;i<num_total_farms;i++)
 /*-----------------------------------------------------------------------------*/
 /*Export CSV file of the number of bTB detected\infected data*/
 /*------------------------------------------------------------------------------*/
-int write_OutPut(char OutDataFile[],int **OutPut, int tot_iterations, int num_OutPut)
+int write_OutPut(char OutDataFile[],double **OutPut, int tot_iterations, int num_OutPut)
 {
 
 	FILE *Out = fopen(OutDataFile,"w");
@@ -1551,7 +1584,7 @@ int write_OutPut(char OutDataFile[],int **OutPut, int tot_iterations, int num_Ou
 		for (col_num = 0;col_num <num_OutPut ; col_num++ )
 		
 		{
-	    fprintf(Out,"%d,",OutPut[line_num][col_num]);
+	    fprintf(Out,"%lf,",OutPut[line_num][col_num]);
         }
         fprintf(Out,"\n");
     }
