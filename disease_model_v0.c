@@ -664,7 +664,7 @@ struct event_node *adding_new_event ;
 struct animal_node *current_animal ;
 int temp_days = 31;
 int current_pro_id ;
-
+int j = 0;
 //printf("Before 2055") ;
 //visualize_animals(FarmProductionList,(2055*3+2)) ;
 //printf("These are animals in 2056 before") ;
@@ -756,11 +756,16 @@ while(today_date<sim_days)
 		previous_event =  (struct event_node*)malloc(sizeof( struct event_node ));
 	   previous_event = current_event ; //rewire to the next event
 	   current_event = current_event->next_node;
+	   if (current_event!=NULL)
+	   {
 	   free(previous_event);
 	   printf("next event is %d, %lld", current_event->event_type, current_event->akey);
+       }
 	   event_day[next_non_markov_date] = current_event;
-	   printf("event day is pointing %lld",event_day[next_non_markov_date]->akey);
-	   system("pause");
+	   //printf("event day is pointing %lld",event_day[next_non_markov_date]->akey);
+	   j++;
+	   printf("this is %d th event",j);
+	  // system("pause");
      }//while loop for going to next events ends
 	
 	
