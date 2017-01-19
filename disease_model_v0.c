@@ -102,9 +102,9 @@ char AnimalDataFile[] = "/C_run/tanimals_present_1july2000_toy.csv";
 int num_total_animals = 16534951;//storage for animals
 
 /* Variables related to events(movement, birth,test)*/
-char MoveDataFile[] = "/C_run/tmovements_since2000july_export2.csv";
-//int num_moves = 9681150;
-long num_moves = 888677;
+char MoveDataFile[] = "/C_run/tmovements_since2000july_export.csv";
+long num_moves = 9681150;
+//long num_moves = 888677;
 int num_moves_vars = 6; // serial_akey, date, src_serial_hid, des_serial_hid, age_type, src_testarea
 
 char BirthDataFile[] = "/C_run/birth_table_since2000july.csv";
@@ -117,7 +117,7 @@ int num_tests_vars = 2;
 
 /* Variables related to simulations*/
 int sim_years = 5;
-int sim_days= 1*365; // 10 years
+int sim_days= 3*365; // 10 years
 long long i, j;
 int iteration;
 int tot_iterations = 1;
@@ -127,10 +127,10 @@ char OutPutFile[] = "/C_run/OutPut.csv";
 int day_to_detect, day_to_occult;
 int max_day_detect = 0.4*365; // max day to detect - 1 Conlan(2014) modified
 int max_day_occult = 11.1*365; // max day to occult - 1  Brooks-Pollock's parameter
-double Se_occult = 0.5;
-double Se_detect = 0.8;
-double beta_a = 0.0003;//within-herd transmission parameter
-double beta_b = 0.00000006;//wildlife transmission parameter
+double Se_occult = 0.7;
+double Se_detect = 0.85;
+double beta_a = 0.000015;//within-herd transmission parameter
+double beta_b = 0.00000001;//wildlife transmission parameter
  //must be random draw from some distribution 0.003 - 0.036 Brooks-Pollock
 
 
@@ -170,7 +170,7 @@ int main(void){
       	
       	/*2.1.2 Read FarmData */
      	read_farm_data(FarmDataFile, FarmData, num_total_farms);
-		 printf("farm data read"); 
+	//	 printf("farm data read"); 
      	/*==================================================================================================*/
     
 
@@ -194,7 +194,7 @@ int main(void){
 					
       	read_animal_data(AnimalDataFile,AnimalData,num_animals) ;
       	
-      	printf("animal data read");
+      //	printf("animal data read");
       /* Check if it reads AnimalData properly
 	  	printf("Animal id is %lld",(long long) AnimalData[0][0]); // intersting it's now working, why do we need declaration?
         long long temp = AnimalData[0][0];
@@ -218,7 +218,7 @@ int main(void){
    	    	 TestData[i] = (double*)malloc( sizeof(double) * num_tests_vars);  
    		     	}
    	    	read_test_data(TestDataFile, TestData, num_tests);
-   	    	printf("test data read");
+   	    //	printf("test data read");
    	    	
    	    	
     /*Read birth data*/
@@ -228,7 +228,7 @@ int main(void){
    	    	 BirthData[i] = (long long*)malloc( sizeof(long long) * num_births_vars);  
    		     	}
    	         read_birth_data(BirthDataFile, BirthData, num_births) ;
-   	         printf("birth data read");
+   	    //     printf("birth data read");
    	         
    	/*Create OutPut data*/
     double **OutPut = (double**)malloc( sizeof(double *) *tot_iterations);
@@ -423,7 +423,7 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 				
 				FarmProductionStatus[current_pro_id][4]++; // increment by 1
 				FarmData[current_farm][8]++;
-				printf("this farm has detectable");
+				//printf("this farm has detectable");
 				} 
 			// if animal is susceptible
 			else if ((int)AnimalData[i][7]==0)
@@ -757,6 +757,8 @@ while(today_date<sim_days)
 		      FarmProductionStatus[current_pro_id][3]--;
 		      FarmProductionStatus[current_pro_id][4]++;
 		      FarmData[current_farm][8]++ ;//increase detectable
+		      printf("detectable increased");
+		     // system("pause");
 		      FarmData[current_farm][7]-- ;//decrease occult
 		      }
 	        printf("Updating TB status done") ;	
@@ -794,11 +796,11 @@ while(today_date<sim_days)
 //visualize_animals(FarmProductionList,2055*3+2) ;
 //printf("These are animals in 2056") ;
 //visualize_animals(FarmProductionList,2056*3+2) ;	 
-for (i=0;i<num_total_farms;i++)
-{
-	if(FarmData[i][8]>0)
-	printf("this has detectable");
-  }  
+//for (i=0;i<num_total_farms;i++)
+//{
+//	if(FarmData[i][8]>0)
+//	printf("this has detectable");
+//  }  
 	   
 	   
 count_farms_infected_detected(FarmData,OutPut,num_total_farms,iteration);
@@ -1223,6 +1225,8 @@ void move_animal_unit(struct animal_node *FarmProductionList[],long long **FarmD
 	if (current_event_type<=2 & FarmData[src_farm_id][6]==1) // if TB status is detected here, cancel
 	{
 		stop == 1;
+	//	printf("stop farm is detected");
+	//	system("pause");
 	}
 	else if ((current_event_type==1||current_event_type==2) && current_event->src_testarea == 0)
 	{
@@ -1232,14 +1236,16 @@ void move_animal_unit(struct animal_node *FarmProductionList[],long long **FarmD
 		int num_detectable = FarmProductionStatus[src_pro_id][4] ;
 		if (num_occult+num_detectable>0)
 		{
-			double P_miss = (pow(1-Se_occult,num_occult))*(pow(1-Se_detect,num_detectable))*100 ;
-			if (rand()%100 > P_miss)
+			double P_miss = (pow(1-Se_occult,num_occult))*(pow(1-Se_detect,num_detectable)) ;
+			if ( ((double)rand()/(double)RAND_MAX) > P_miss)
 			/// needs to complete
 			{
 				FarmData[src_farm_id][6]=1 ; //farm becomes detected
 				// now omit the function which animals to be detected
 				//in future to add the detected animals to "detected list"
 				stop == 1 ;
+			//	printf("stop! pre movement detected");
+			//	system("pause");
 			}
 			
 		}
@@ -1408,7 +1414,7 @@ int des_pro_id = current_event->des_pro_id;
 /* -------------------------------------------------------------------------- */
 /* TESTING HERDS */
 /* -------------------------------------------------------------------------- */
-void test_farms(double **FarmData,struct event_node *current_event,double Se_occult, double Se_detect)
+void test_farms(long long **FarmData,struct event_node *current_event,double Se_occult, double Se_detect)
 {
 	int testschedule_id = current_event->src_pro_id;//NOTE: THIS IS NOT SRC ID, BUT TEST ID
 	for (i=0; i<num_total_farms; i++)
@@ -1420,8 +1426,8 @@ void test_farms(double **FarmData,struct event_node *current_event,double Se_occ
 		  
 		  if((num_occult+num_detectable)>0) // if this farm has more than 0 occult+detectable
 		  {
-		     double P_miss = (pow(1-Se_occult,num_occult))*(pow(1-Se_detect,num_detectable))*100 ;
-			 if (rand()%100 > P_miss)
+		     double P_miss = (pow(1-Se_occult,num_occult))*(pow(1-Se_detect,num_detectable)) ;
+			 if ( ((double)rand()/(double)RAND_MAX) > P_miss)
 			  {
 			  FarmData[i][6]=1 ; //farm becomes detected
 				// now omit the function which animals to be detected
@@ -1450,7 +1456,7 @@ int k = 0;
 	{//for loop A
 	
 	farm_id = (int)floor(i/3) ;
-	if ((FarmData[farm_id][3]==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0)&&FarmProductionStatus[i][1]>0)
+	if ((FarmData[farm_id][3]==0||FarmProductionStatus[i][3]>0||FarmProductionStatus[i][4]>0)&&FarmProductionStatus[i][1]>0&&FarmProductionStatus[i][0])
 	{
 		//if(FarmProductionStatus[i][0]<0)
 		//{
@@ -1488,11 +1494,11 @@ int k = 0;
 	   k++;
 	   printf("This is %d th markov",k);
 	   today_date = ceil(day_to_markov+today_date) ;
-	   //printf("ceil days is %d",today_date);
-	   //system("pause");
+	   printf("ceil days is %d",today_date);
+	   system("pause");
 	   double random_value = (double)rand()/(double)(RAND_MAX)*sum_inf_pressure;
-	   //printf("random_value is %f",random_value);
-	   //randon value between 0 and sum_inf_pressure
+	   printf("random_value is %f",random_value);
+	   
 	   double current_value = 0;
 	   int pro_id = 0;
 	   
@@ -1502,8 +1508,8 @@ int k = 0;
 	   	if ((FarmData[farm_id][3]==0||FarmProductionStatus[pro_id][3]>0||FarmProductionStatus[pro_id][4]>0)&&FarmProductionStatus[pro_id][0])
 	       {
 	       	current_value = FarmProductionStatus[pro_id][6] ;
-	     //  	printf("current_value is %f",current_value);
-	      // 	printf("random value is %f",random_value);
+	       	printf("current_value is %f",current_value);
+	       	printf("random value is %f",random_value);
 	       	pro_id++;
 		   }
 		else
@@ -1523,8 +1529,8 @@ int k = 0;
 	   	double random_value = ((double)rand()/(double)RAND_MAX); //choose value between 0 and 1
 	   	if (random_value <= 1/total_s)
 	   	 {
-	   	 //	printf("random value is %f",random_value);
-	   	 //	printf("target value is %f",1/total_s);
+	   	 	printf("random value is %f",random_value);
+	   	 	printf("target value is %f",1/total_s);
 	   	 	current_animal->tb_status = 1;
 	   	 	FarmProductionStatus[pro_id][1]--;
 	   	 	FarmProductionStatus[pro_id][2]++;
@@ -1533,7 +1539,7 @@ int k = 0;
 		else
 		 {
 		    current_animal = current_animal->next_node;	
-		  //  printf("next animal");
+		    printf("next animal");
 		 }
 	    } //choosing which animal to infect done  
 	}
@@ -1549,7 +1555,7 @@ return(today_date) ;
 /*------------------------------------------------------------------------------------------------*/
 /*COUNT NUMBER OF INFECTED AND DETECTED FARMS*/
 /*--------------------------------------------------------------*/
-void count_farms_infected_detected(double **FarmData, double **OutPut, long num_total_farms, int sim)
+void count_farms_infected_detected(long long **FarmData, double **OutPut, long num_total_farms, int sim)
 {
 long i;
 for (i=0;i<num_total_farms;i++)
@@ -1557,11 +1563,12 @@ for (i=0;i<num_total_farms;i++)
 	if(FarmData[i][7]>0||FarmData[i][8]>0)
 	{
 	 OutPut[sim][0]++; //infected	
-	 printf("one more infected");
+	 //printf("one more infected");
 	}
 	if(FarmData[i][6]==1)
 	{
 	 OutPut[sim][1]++;//detected
+	 printf("one more detected");
 	}
 }
  	
