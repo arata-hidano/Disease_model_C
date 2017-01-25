@@ -118,7 +118,7 @@ int num_tests_vars = 2;
 
 /* Variables related to simulations*/
 int sim_years = 5;
-int sim_days= 365*3; // 10 years
+int sim_days= 365*5; // 10 years
 //341 farms detected TB in this 3 years
 long long i, j;
 int iteration;
@@ -130,7 +130,7 @@ int day_to_detect, day_to_occult;
 int max_day_detect = 0.4*365; // max day to detect - 1 Conlan(2014) modified
 int max_day_occult = 5*365; // max day to occult - 1  Brooks-Pollock's parameter 11.1
 double Se_occult = 0.2;
-double Se_detect = 0.85;
+double Se_detect = 0.5;
 double beta_a = 0.01;//within-herd transmission parameter
 double beta_b = 0.0001;//wildlife transmission parameter
  //must be random draw from some distribution 0.003 - 0.036 Brooks-Pollock
@@ -318,10 +318,10 @@ for(iteration=0; iteration<tot_iterations; iteration++)
                 long long current_akey = (long long)AnimalData[i][0];
                 new_node -> akey = current_akey ; // extract from animal data
                 new_node -> age_day = (int)AnimalData[i][2] ;
-                if(current_akey==2454078)
-                {
-                	printf("hi i'm here at %lld",(long long)AnimalData[i][1]);
-				}
+              //  if(current_akey==2454078)
+               // {
+               // 	printf("hi i'm here at %lld",(long long)AnimalData[i][1]);
+			//	}
                 
                 long long current_farm = (long long)AnimalData[i][1] ; // farm id
                 int current_type = (int)AnimalData[i][3] ; // which age group (production unit)
@@ -353,6 +353,22 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 			}  
 		
             */
+          /*Can ADD OTHER INFECTED ANIMALS*/
+          //set probability
+          double p_inf = 0.0001;
+          double random_value = ((double)rand()/(double)RAND_MAX) ;
+          if (random_value < p_inf)
+          {
+          	double random_value = ((double)rand()/(double)RAND_MAX) ;
+          	if(random_value<0.9)
+          	{
+          	AnimalData[i][7] = 3;
+            }
+            else
+            {
+            	AnimalData[i][7] = 2;
+			}
+		  }
           
             
             /*---------TB status BLOCK------------------------------------------------------------------------------*/
@@ -433,8 +449,11 @@ for(iteration=0; iteration<tot_iterations; iteration++)
 			// if animal is susceptible
 			else if ((int)AnimalData[i][7]==0)
 			{
-				
+		
+
+		  
 				FarmProductionStatus[current_pro_id][1]++; // increment by 1
+		  
 				} 
 			// finally increment for the total number of animals in this type
 			FarmProductionStatus[current_pro_id][0] = FarmProductionStatus[current_pro_id][0]+1;
@@ -652,7 +671,7 @@ int current_event_type ;
                  add_event_node(event_day, current_day, new_event) ;
                 }
            }
-           int YEARS = 3;
+           int YEARS = 5;
            int current_day;
     /* ADD UNIT CHNAGE EVENTS*/
         for(i=0;i<YEARS;i++)
@@ -794,12 +813,12 @@ while(today_date<sim_days)
      //system("pause");
      while(current_event!=NULL)
      {
-     	if(current_event->akey==1182045)
-     	{
-     		printf("this animal is from %lld to %lld with type %d",current_event->src_pro_id, current_event->des_pro_id,current_event->event_type);
-		    printf("and current_pro_id is %lld and day %d",animal_node_pointer[1182045]->current_pro_id, today_date);
-		    printf("previous animal is %lld and next animal is %lld",animal_node_pointer[1182045]->previous_node->akey,animal_node_pointer[1182045]->next_node->akey);
-		 }
+     //	if(current_event->akey==1182045)
+     //	{
+     //		printf("this animal is from %lld to %lld with type %d",current_event->src_pro_id, current_event->des_pro_id,current_event->event_type);
+	//	    printf("and current_pro_id is %lld and day %d",animal_node_pointer[1182045]->current_pro_id, today_date);
+	//	    printf("previous animal is %lld and next animal is %lld",animal_node_pointer[1182045]->previous_node->akey,animal_node_pointer[1182045]->next_node->akey);
+	//	 }
 	 
 	   if (current_event-> event_type <= 4 ) // if movement or new birth or cull death
 	      {
@@ -862,54 +881,54 @@ while(today_date<sim_days)
 		      FarmProductionStatus[current_pro_id][3]--;
 		      FarmProductionStatus[current_pro_id][4]++;
 		      FarmData[current_farm][8]++ ;//increase detectable
-		      printf("detectable increased");
+		     // printf("detectable increased");
 		     // system("pause");
 		      FarmData[current_farm][7]-- ;//decrease occult
 		      }
-	        printf("Updating TB status done") ;	
+	       // printf("Updating TB status done") ;	
 	      }//exposed->occult ot occult->detectable DONE
 	      else if (current_event->event_type==8)
 	      {
-	      	printf("Changing unit!");
+	      //	printf("Changing unit!");
 	      	move_production_type(FarmProductionStatus,FarmProductionList,num_total_farms);
-	      	printf("Changing unit done!");
-	      	system("pause");
+	      //	printf("Changing unit done!");
+	      //	system("pause");
 		  }
 	      
 	      
-	    if(today_date==728)
-     	{
+	   // if(today_date==728)
+     	//{
      	//	printf("this animal is from %lld to %lld with type %d",current_event->src_pro_id, current_event->des_pro_id,current_event->event_type);
 		   // printf("and current_pro_id is %lld",animal_node_pointer[2454078]->current_pro_id);
-		   if(animal_node_pointer[1182045]->previous_node!=NULL&&animal_node_pointer[1182045]->previous_node->akey!=3546673)
-		   {
-		   	if(animal_node_pointer[1182045]->previous_node!=NULL)
-		   	{
-		   	printf("previous animal is %lld",animal_node_pointer[1182045]->previous_node->akey);
+		  // if(animal_node_pointer[1182045]->previous_node!=NULL&&animal_node_pointer[1182045]->previous_node->akey!=3546673)
+		  // {
+		  // 	if(animal_node_pointer[1182045]->previous_node!=NULL)
+		   //	{
+		   //	printf("previous animal is %lld",animal_node_pointer[1182045]->previous_node->akey);
 		   	
-		   }
-		    if(FarmProductionList[1220*3+2]!=NULL)
-		   {
-		   	printf("1220 is pointing %lld",FarmProductionList[1220*3+2]->akey);
-		   }
-		   else
-		   {
-		   	printf("1220 is pointing null");
-		   }
-		   	printf("current akey is %lld", current_event->akey);
-		   	printf("And 1225 is pointing %lld",FarmProductionList[1225*3+1]->akey);
+		   //}
+		    //if(FarmProductionList[1220*3+2]!=NULL)
+		   //{
+		   //	printf("1220 is pointing %lld",FarmProductionList[1220*3+2]->akey);
+		  // }
+		  // else
+		  // {
+		   //	printf("1220 is pointing null");
+		  // }
+		   	//printf("current akey is %lld", current_event->akey);
+		   	//printf("And 1225 is pointing %lld",FarmProductionList[1225*3+1]->akey);
 		   	//system("pause");
-		   }
-		   else if (animal_node_pointer[1182045]->previous_node==NULL)
-		   {
-		   	printf("1182045 is now first");
-		   	if(FarmProductionList[1220*3+2]!=NULL)
-		   {
-		   	printf("and 1220 is pointing %lld",FarmProductionList[1220*3+2]->akey);
-		   }
-		   }
+		   //}
+		  // else if (animal_node_pointer[1182045]->previous_node==NULL)
+		  // {
+		   //	printf("1182045 is now first");
+		   //	if(FarmProductionList[1220*3+2]!=NULL)
+		  // {
+		   //	printf("and 1220 is pointing %lld",FarmProductionList[1220*3+2]->akey);
+		  // }
+		  // }
 		   
-		 }  
+		// }  
 	      
 		struct event_node *previous_event;
 		//previous_event =  (struct event_node*)malloc(sizeof( struct event_node ));
